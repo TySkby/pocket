@@ -47,6 +47,12 @@ def method_wrapper(fn):
         arg_names.remove('self')
         kwargs.update(dict(zip(arg_names, args)))
 
+        if 'return_rs' in arg_names:
+            return_rs = kwargs.pop('return_rs', True)
+            arg_names.remove('return_rs')
+        else:
+            return_rs = False
+
         url = self.api_endpoints[fn.__name__]
         payload = dict([
             (k, v) for k, v in kwargs.iteritems()
@@ -54,7 +60,7 @@ def method_wrapper(fn):
         ])
         payload.update(self.get_payload())
 
-        return self.make_request(url, payload)
+        return self.make_request(url, payload, return_rs=return_rs)
 
     return wrapped
 
@@ -150,8 +156,11 @@ class Pocket(object):
         return r.json() or r.text, r.headers
 
     @classmethod
-    def make_request(cls, url, payload, headers=None):
-        cls._make_request(url, payload, headers)
+    def make_request(cls, url, payload, headers=None, return_rs=False):
+        rs = cls._make_request(url, payload, headers)
+        if return_rs:
+            return rs
+
 
     @method_wrapper
     def add(self, url, title=None, tags=None, tweet_id=None):
@@ -167,7 +176,7 @@ class Pocket(object):
     def get(
         self, state=None, favorite=None, tag=None, contentType=None,
         sort=None, detailType=None, search=None, domain=None, since=None,
-        count=None, offset=None
+        count=None, offset=None, return_rs=True
     ):
         '''
         This method allows you to retrieve a user's list. It supports
